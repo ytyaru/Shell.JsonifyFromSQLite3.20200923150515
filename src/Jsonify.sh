@@ -25,19 +25,26 @@ JsonifyFromSQLite3() {
 	TABLE_NAME=Parameters
 	IsInt() { test 0 -eq $1 > /dev/null 2>&1 || expr $1 + 0 > /dev/null 2>&1; }
 	IsFloat() { [[ "$1" =~ ^[0-9]+\.[0-9]+$ ]] && return 0 || return 1; }
+	IsDate() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && return 0 || return 1; }
+	IsTime() { [[ "$1" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] && return 0 || return 1; }
+	IsDateTime() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[:blank:][0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] && return 0 || return 1; }
 	FIELDS=()
 	for KEY in ${!KV[*]}; do
 		TYPE='TEXT'
-		IsFloat "${KV["$KEY"]}" && TYPE='REAL'
 		IsInt "${KV["$KEY"]}" && TYPE='INT'
+		IsFloat "${KV["$KEY"]}" && TYPE='REAL'
+		IsDate "${KV["$KEY"]}" && TYPE='DATE'
+		IsTime "${KV["$KEY"]}" && TYPE='NUMERIC'
+		IsDateTime "${KV["$KEY"]}" && TYPE='DATETIME'
 		FIELDS+=("    ${KEY} ${TYPE}")
 	done
 	SQL='create table '"$TABLE_NAME"'('$'\n'
 	SQL+="$(echo -e "$(IFS=,; echo "${FIELDS[*]}")" | sed -r 's/ (INT|REAL|TEXT|NULL|BLOB|NUMERIC|INTEGER|DOUBLE|FLOAT|BOOLEAN|DATE|DATETIME),/ \1,\'$'\n/gi')"
 	SQL+=$'\n'')'
-	echo "${KV[*]}" | tr ' ' '\t' | 
+	echo -e "$(IFS=$'\t'; echo "${KV[*]}")" | 
 	sqlite3 :memory: "$SQL" \
 	'.mode tabs' '.import /dev/stdin '"$TABLE_NAME" \
+	'select * from sqlite_master' \
 	'.mode json' 'select * from '"$TABLE_NAME" \
 	| sed 's/^\[//' | sed 's/\]$//'
 }

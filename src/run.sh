@@ -21,7 +21,9 @@ Run() {
 	KV['Id']=100
 	KV['Name']='Yamada'
 	KV['height']='175.1'
-	export KV
+	KV['birth']='2000-01-01'
+	KV['birth_time']='12:34:56'
+	KV['created']='2020-09-23 01:23:45'
 	Jsonify
 }
 Run

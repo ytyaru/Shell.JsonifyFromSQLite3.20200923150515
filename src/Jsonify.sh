@@ -48,4 +48,39 @@ JsonifyFromSQLite3() {
 	'.mode json' 'select * from '"$TABLE_NAME" \
 	| sed 's/^\[//' | sed 's/\]$//'
 }
-
+# Bashを使ってJSON文字列を返す。連想配列にキーと値をセットしてから呼び出すこと。
+JsonifyFromBash() {
+	TABLE_NAME=Parameters
+	IsInt() { test 0 -eq $1 > /dev/null 2>&1 || expr $1 + 0 > /dev/null 2>&1; }
+	IsFloat() { [[ "$1" =~ ^[0-9]+\.[0-9]+$ ]] && return 0 || return 1; }
+	IsDate() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && return 0 || return 1; }
+	IsTime() { [[ "$1" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] && return 0 || return 1; }
+	IsDateTime() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[:blank:][0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] && return 0 || return 1; }
+	MakeKey() { echo '"'"$1"'"'':'; }
+	MakeValue() { # $1:value, $2:type
+		case "${2^^}" in
+			INT|INTEGER|REAL|FLOAT|DOUBLE) echo -e "$1"',';;
+			*) echo -e '"'"$1"'"'','
+		esac
+	}
+	GetType() {
+		TYPE='TEXT'
+		IsInt "$1" && TYPE='INT'
+		IsFloat "$1" && TYPE='REAL'
+		IsDate "$1" && TYPE='DATE'
+		IsTime "$1" && TYPE='NUMERIC'
+		IsDateTime "$1" && TYPE='DATETIME'
+		echo "$TYPE"
+	}
+	FIELDS=()
+	ARGS=("$@")
+	IDX=0
+	JSON=;
+	[ 1 -eq $(($# % 2)) ] && { Throw '引数は偶数個にしてください。キーと値の順で与えてください。'; }
+	for ARG in "${ARGS[@]}"; do
+		[ 0 -eq $((IDX % 2)) ] && JSON+="$(MakeKey "$ARG")" || JSON+="$(MakeValue "$ARG" "$(GetType "$ARG")" )"
+		IDX=$((IDX + 1))
+	done
+	JSON='{'"$(echo -e "${JSON}" | sed -e 's/,$//')"'}'
+	echo -e "$JSON"
+}

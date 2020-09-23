@@ -24,6 +24,8 @@ Run() {
 	KV['birth']='2000-01-01'
 	KV['birth_time']='12:34:56'
 	KV['created']='2020-09-23 01:23:45'
+	KV['is_ok']=1
 	Jsonify
+	JsonifyFromBash Id 100 Name 'Yamada' height '175.1' birth '2000-01-01' birth_time '12:34:56' created '2020-09-23 01:23:45' is_ok 1
 }
 Run
